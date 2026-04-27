@@ -462,28 +462,28 @@ function renderList(){
   document.getElementById('cnt').textContent=f.length+'건';
   const el=document.getElementById('entries');
   if(!f.length){ el.innerHTML='<div class="empty"><div style="font-size:48px;margin-bottom:12px">📭</div><p>기록된 일지가 없습니다.<br/>✏️ 기록 탭에서 추가하세요!</p></div>'; return; }
-  el.innerHTML=f.map(e=>`
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div style="flex:1">
-          <div style="font-size:12px;color:var(--sub);font-weight:600;margin-bottom:5px">${e.date}</div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
-            <span class="tag tag-c">${e.crop}</span>
-            <span class="tag tag-w">${e.workType}</span>
-            ${e.area?`<span class="tag tag-a">${e.area}</span>`:''}
-          </div>
-          <div style="font-size:12px;color:var(--sub);margin-bottom:${e.note?'6':'0'}px">
-            ${e.weather}${e.temp?`  🌡️ ${e.temp}°C`:''}
-          </div>
-          ${e.note?`<div style="font-size:13px;color:#3a4a2a;line-height:1.6">${esc(e.note)}</div>`:''}
-          ${e.photo?`<img src="${e.photo}" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-top:10px"/>`:''}
-        </div>
-        <div style="display:flex;gap:6px;margin-left:10px">
-          <button onclick="startEdit(${e.id})" style="padding:7px 10px;border:none;border-radius:8px;background:#f0f8e8;cursor:pointer;font-size:14px">✏️</button>
-          <button onclick="delEntry(${e.id})" style="padding:7px 10px;border:none;border-radius:8px;background:#fef0f0;cursor:pointer;font-size:14px">🗑️</button>
-        </div>
-      </div>
-    </div>`).join('');
+  el.innerHTML=f.map(function(e){
+    let h='<div class="card">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+    h+='<div style="flex:1">';
+    h+='<div style="font-size:12px;color:var(--sub);font-weight:600;margin-bottom:5px">'+e.date+'</div>';
+    h+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">';
+    h+='<span class="tag tag-c">'+e.crop+'</span>';
+    h+='<span class="tag tag-w">'+e.workType+'</span>';
+    if(e.area) h+='<span class="tag tag-a">'+e.area+'</span>';
+    h+='</div>';
+    h+='<div style="font-size:12px;color:var(--sub);margin-bottom:'+(e.note?'6':'0')+'px">';
+    h+=e.weather+(e.temp?'  🌡️ '+e.temp+'°C':'');
+    h+='</div>';
+    if(e.note) h+='<div style="font-size:13px;color:#3a4a2a;line-height:1.6">'+esc(e.note)+'</div>';
+    if(e.photo) h+='<img src="'+e.photo+'" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-top:10px"/>';
+    h+='</div>';
+    h+='<div style="display:flex;gap:6px;margin-left:10px">';
+    h+='<button onclick="startEdit('+e.id+')" style="padding:7px 10px;border:none;border-radius:8px;background:#f0f8e8;cursor:pointer;font-size:14px">✏️</button>';
+    h+='<button onclick="delEntry('+e.id+')" style="padding:7px 10px;border:none;border-radius:8px;background:#fef0f0;cursor:pointer;font-size:14px">🗑️</button>';
+    h+='</div></div></div>';
+    return h;
+  }).join('');
 }
 
 // ═══════ 폼 ═══════
@@ -652,37 +652,35 @@ function renderCalList(){
   });
   el.innerHTML=html;
 }
+function renderCal(){
   const now=new Date(calYear,calMonth,1);
-  document.getElementById('cal-title').textContent=`${calYear}년 ${calMonth+1}월`;
+  document.getElementById('cal-title').textContent=calYear+'년 '+(calMonth+1)+'월';
   const firstDay=now.getDay();
   const lastDate=new Date(calYear,calMonth+1,0).getDate();
   const today=new Date().toISOString().split('T')[0];
-
-  // 이달의 일정 날짜 수집 (반복 포함)
   const schedDates={};
-  schedules.forEach(s=>{
-    getDatesForSched(s).forEach(d=>{
+  schedules.forEach(function(s){
+    getDatesForSched(s).forEach(function(d){
       if(!schedDates[d]) schedDates[d]=[];
       schedDates[d].push(s);
     });
   });
-
   let html='';
-  for(let i=0;i<firstDay;i++) html+=`<div></div>`;
+  for(let i=0;i<firstDay;i++) html+='<div></div>';
   for(let d=1;d<=lastDate;d++){
-    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const isToday=ds===today;
     const isSel=ds===calSelDate;
     const hasSched=schedDates[ds]&&schedDates[ds].length>0;
     const dow=(firstDay+d-1)%7;
     const col=dow===0?'#e74c3c':dow===6?'#3498db':'var(--text)';
-    html+=`<div onclick="selectCalDate('${ds}')" style="text-align:center;padding:6px 2px;cursor:pointer;border-radius:10px;
-      background:${isSel?'var(--g2)':isToday?'var(--accent)':'transparent'};
-      color:${isSel?'#fff':col};font-size:13px;font-weight:${isToday||isSel?'700':'400'};position:relative">
-      ${d}
-      ${hasSched?`<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
-        background:${isSel?'#fff':'var(--g3)'};border-radius:50%;width:5px;height:5px"></div>`:''}
-    </div>`;
+    const bg=isSel?'var(--g2)':isToday?'var(--accent)':'transparent';
+    const fc=isSel?'#fff':col;
+    const fw=(isToday||isSel)?'700':'400';
+    let cell='<div onclick="selectCalDate(\''+ds+'\')" style="text-align:center;padding:6px 2px;cursor:pointer;border-radius:10px;background:'+bg+';color:'+fc+';font-size:13px;font-weight:'+fw+';position:relative">'+d;
+    if(hasSched) cell+='<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);background:'+(isSel?'#fff':'var(--g3)')+';border-radius:50%;width:5px;height:5px"></div>';
+    cell+='</div>';
+    html+=cell;
   }
   document.getElementById('cal-grid').innerHTML=html;
   renderDayScheds();
@@ -691,8 +689,8 @@ function renderCalList(){
 function selectCalDate(ds){
   calSelDate=ds;
   renderCal();
-  const [y,m,d]=ds.split('-');
-  document.getElementById('cal-selected-date').textContent=`${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
+  const parts=ds.split('-');
+  document.getElementById('cal-selected-date').textContent=parts[0]+'년 '+parseInt(parts[1])+'월 '+parseInt(parts[2])+'일';
 }
 
 function getDatesForSched(s){
@@ -703,7 +701,7 @@ function getDatesForSched(s){
   let cur=new Date(start);
   do{
     const ds=cur.toISOString().split('T')[0];
-    if(ds.startsWith(`${calYear}-${String(calMonth+1).padStart(2,'0')}`)) dates.push(ds);
+    if(ds.startsWith(calYear+'-'+String(calMonth+1).padStart(2,'0'))) dates.push(ds);
     if(!interval) break;
     cur=new Date(cur.getTime()+interval*86400000);
   }while(cur<=end);
@@ -715,18 +713,20 @@ function renderDayScheds(){
   if(!calSelDate){el.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:20px">날짜를 선택하면 일정이 표시됩니다.</div>';return;}
   const day=schedules.filter(s=>getDatesForSched(s).includes(calSelDate));
   if(!day.length){el.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:16px">이 날 등록된 일정이 없습니다.</div>';return;}
-  el.innerHTML=day.map((s,i)=>`
-    <div style="background:var(--accent);border-radius:12px;padding:12px 14px;margin-bottom:10px;border-left:4px solid var(--g3)">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--g2);margin-bottom:4px">${s.type} ${esc(s.name)}</div>
-          ${s.repeat!=='반복 없음'?`<div style="font-size:11px;color:var(--sub)">🔄 ${s.repeat}</div>`:''}
-          ${s.product?`<div style="font-size:12px;color:var(--text);margin-top:4px">제품: ${esc(s.product)}${s.ratio?' ('+esc(s.ratio)+')':''}</div>`:''}
-          ${s.memo?`<div style="font-size:12px;color:var(--sub);margin-top:4px">${esc(s.memo)}</div>`:''}
-        </div>
-        <button onclick="delSched(${schedules.indexOf(s)})" style="background:#fef0f0;color:var(--warn);border:none;border-radius:8px;padding:5px 8px;cursor:pointer;font-size:13px">🗑️</button>
-      </div>
-    </div>`).join('');
+  el.innerHTML=day.map(function(s){
+    const idx=schedules.indexOf(s);
+    let h='<div style="background:var(--accent);border-radius:12px;padding:12px 14px;margin-bottom:10px;border-left:4px solid var(--g3)">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+    h+='<div>';
+    h+='<div style="font-size:13px;font-weight:700;color:var(--g2);margin-bottom:4px">'+s.type+' '+esc(s.name)+'</div>';
+    if(s.repeat&&s.repeat!=='반복 없음') h+='<div style="font-size:11px;color:var(--sub)">🔄 '+s.repeat+'</div>';
+    if(s.product) h+='<div style="font-size:12px;color:var(--text);margin-top:4px">제품: '+esc(s.product)+(s.ratio?' ('+esc(s.ratio)+')':'')+'</div>';
+    if(s.memo) h+='<div style="font-size:12px;color:var(--sub);margin-top:4px">'+esc(s.memo)+'</div>';
+    h+='</div>';
+    h+='<button onclick="delSched('+idx+')" style="background:#fef0f0;color:var(--warn);border:none;border-radius:8px;padding:5px 8px;cursor:pointer;font-size:13px">🗑️</button>';
+    h+='</div></div>';
+    return h;
+  }).join('');
 }
 
 function calMove(dir){
@@ -773,8 +773,8 @@ function saveSched(){
   };
   schedules.push(s); saveScheds();
   closeSchedForm(); calSelDate=date; renderCal();
-  const [y,m,d]=date.split('-');
-  document.getElementById('cal-selected-date').textContent=`${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
+  const parts=date.split('-');
+  document.getElementById('cal-selected-date').textContent=parts[0]+'년 '+parseInt(parts[1])+'월 '+parseInt(parts[2])+'일';
   toast('일정이 등록되었습니다.');
 }
 
