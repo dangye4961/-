@@ -271,18 +271,29 @@ textarea.inp{height:88px;resize:vertical}
       </div>
       <button onclick="calMove(1)" style="background:var(--accent);border:none;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:16px;color:var(--g2)">›</button>
     </div>
-    <!-- 요일 헤더 -->
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px">
-      <div style="text-align:center;font-size:11px;font-weight:700;color:#e74c3c;padding:4px">일</div>
-      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">월</div>
-      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">화</div>
-      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">수</div>
-      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">목</div>
-      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">금</div>
-      <div style="text-align:center;font-size:11px;font-weight:700;color:#3498db;padding:4px">토</div>
+    <!-- 월간/목록 전환 -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button id="cal-view-month" onclick="setCalView('month')" style="flex:1;padding:8px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff">📅 월간</button>
+      <button id="cal-view-list" onclick="setCalView('list')" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;font-size:13px;font-weight:700;background:#fff;color:var(--g3)">📋 목록</button>
     </div>
     <!-- 달력 그리드 -->
-    <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+    <div id="cal-month-wrap">
+      <!-- 요일 헤더 -->
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px">
+        <div style="text-align:center;font-size:11px;font-weight:700;color:#e74c3c;padding:4px">일</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">월</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">화</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">수</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">목</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">금</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:#3498db;padding:4px">토</div>
+      </div>
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+    </div>
+    <!-- 목록 뷰 -->
+    <div id="cal-list-wrap" style="display:none">
+      <div id="cal-list-body"></div>
+    </div>
   </div>
 
   <!-- 선택된 날짜 일정 -->
@@ -347,7 +358,7 @@ let entries=[], customCrops=[], editId=null;
 let formState={crop:'고추',workType:'파종',weather:'☀️ 맑음',photo:null};
 let diagPhoto=null, diagCrop='';
 let schedules=[], calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelDate='';
-let schedTypeState='🌱 파종/정식', schedRepeatState='반복 없음';
+let schedTypeState='🌱 파종/정식', schedRepeatState='반복 없음', calView='month';
 
 // ═══════ 초기화 ═══════
 window.addEventListener('DOMContentLoaded',()=>{
@@ -533,7 +544,7 @@ async function runDiag(){
 🔎 진단 요약 / 🩺 예상 병충해 / ⚠️ 심각도(낮음~매우높음) / 💊 처방 및 방제 방법 / 🛡️ 예방 방법 / 📅 추적 관찰
 사진이 불명확하거나 정상인 경우에도 솔직하게 알려주세요.`;
   try{
-    const text=await callAPI({model:'claude-opus-4-54',max_tokens:1200,system,messages:[{role:'user',content:[
+    const text=await callAPI({model:'claude-haiku-4-5-20251001',max_tokens:1200,system,messages:[{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
       {type:'text',text:`이 작물 사진을 진단해주세요.${diagCrop?' 작물: '+diagCrop:''}`}
     ]}]});
@@ -556,7 +567,7 @@ async function askEnc(){
 병충해·재배 관리·비료·농약·수확 등 농업 전반에 답변합니다.
 답변 구조(해당 항목만): 핵심 요약 / 증상·원인(해당시) / 예방 및 방제 방법 / 추천 농약 또는 친환경 방법 / 주의사항`;
   try{
-    const text=await callAPI({model:'claude-opus-4-54',max_tokens:1200,system,messages:[{role:'user',content:q}]});
+    const text=await callAPI({model:'claude-haiku-4-5-20251001',max_tokens:1200,system,messages:[{role:'user',content:q}]});
     document.getElementById('enc-body').textContent=text;
     document.getElementById('enc-result').style.display='block';
   }catch(e){ document.getElementById('enc-body').textContent='오류: '+e.message; document.getElementById('enc-result').style.display='block'; }
@@ -579,7 +590,73 @@ function exportCSV(){
 const SCHED_TYPES=['🌱 파종/정식','💧 살포(영양제·비료·농약)','🍅 수확','📋 기타 작업'];
 const REPEAT_OPTS=['반복 없음','7일마다','10일마다','14일마다','30일마다'];
 
-function renderCal(){
+function setCalView(v){
+  calView=v;
+  document.getElementById('cal-month-wrap').style.display=v==='month'?'block':'none';
+  document.getElementById('cal-list-wrap').style.display=v==='list'?'block':'none';
+  document.getElementById('cal-view-month').style.background=v==='month'?'linear-gradient(135deg,var(--g2),var(--g3))':'#fff';
+  document.getElementById('cal-view-month').style.color=v==='month'?'#fff':'var(--g3)';
+  document.getElementById('cal-view-month').style.border=v==='month'?'none':'1.5px solid var(--border)';
+  document.getElementById('cal-view-list').style.background=v==='list'?'linear-gradient(135deg,var(--g2),var(--g3))':'#fff';
+  document.getElementById('cal-view-list').style.color=v==='list'?'#fff':'var(--g3)';
+  document.getElementById('cal-view-list').style.border=v==='list'?'none':'1.5px solid var(--border)';
+  if(v==='list') renderCalList();
+}
+
+function renderCalList(){
+  const allDates={};
+  schedules.forEach(s=>{
+    getDatesForSched(s).forEach(d=>{
+      const ym=d.slice(0,7);
+      const key=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+      if(ym===key){
+        if(!allDates[d]) allDates[d]=[];
+        allDates[d].push(s);
+      }
+    });
+  });
+  const sorted=Object.keys(allDates).sort();
+  const el=document.getElementById('cal-list-body');
+  const total=sorted.reduce((a,d)=>a+allDates[d].length,0);
+  if(!sorted.length){
+    el.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:24px">이달 등록된 일정이 없습니다.</div>';
+    return;
+  }
+  const typeColor={'🌱 파종/정식':'#2d7a3a','💧 살포(영양제·비료·농약)':'#2060c0','🍅 수확':'#c0392b','📋 기타 작업':'#8a6a3a'};
+  const typeLabel={'🌱 파종/정식':'파종/정식','💧 살포(영양제·비료·농약)':'살포','🍅 수확':'수확','📋 기타 작업':'기타'};
+  el.innerHTML=`<div style="font-size:14px;font-weight:700;color:var(--g2);margin-bottom:14px">${calMonth+1}월 일정 목록 (${total}건)</div>`
+  +sorted.map(d=>{
+    const dt=new Date(d);
+    const dow=['일','월','화','수','목','금','토'][dt.getDay()];
+    const dowColor=dow==='일'?'#e74c3c':dow==='토'?'#3498db':'var(--text)';
+    const mm=d.slice(5,7), dd=d.slice(8,10);
+    return `<div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:${dowColor};margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">
+        ${mm}/${dd} (${dow})
+      </div>
+      ${allDates[d].map(s=>{
+        const tc=typeColor[s.type]||'#4a7c35';
+        const tl=typeLabel[s.type]||'기타';
+        const isRepeat=s.repeat&&s.repeat!=='반복 없음';
+        return `<div style="background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;
+          box-shadow:0 1px 6px rgba(45,90,27,.1);border-left:4px solid ${tc};display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:14px;font-weight:700;color:var(--text)">${esc(s.name)}</span>
+              ${isRepeat?`<span style="font-size:10px;color:var(--sub)">↻</span>`:''}
+            </div>
+            ${s.product?`<div style="font-size:12px;color:var(--sub);margin-bottom:2px">${esc(s.product)}${s.ratio?' · '+esc(s.ratio):''}</div>`:''}
+            ${s.memo?`<div style="font-size:12px;color:var(--sub)">${esc(s.memo)}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:8px;flex-shrink:0">
+            <span style="background:${tc};color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px">${tl}</span>
+            <button onclick="delSched(${schedules.indexOf(s)})" style="background:#fef0f0;color:var(--warn);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px">🗑️</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
   const now=new Date(calYear,calMonth,1);
   document.getElementById('cal-title').textContent=`${calYear}년 ${calMonth+1}월`;
   const firstDay=now.getDay();
