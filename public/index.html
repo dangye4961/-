@@ -135,7 +135,7 @@ textarea.inp{height:88px;resize:vertical}
       <button class="nav-btn" onclick="go('form')">✏️ 기록</button>
       <button class="nav-btn" onclick="go('diag')">🔬 병충해 진단</button>
       <button class="nav-btn" onclick="go('enc')">📖 백과사전</button>
-      <button class="nav-btn" onclick="go('stats')">📊 통계</button>
+      <button class="nav-btn" onclick="go('cal')">📅 달력일정</button>
     </div>
   </div>
 </div>
@@ -260,16 +260,71 @@ textarea.inp{height:88px;resize:vertical}
 </div>
 </div>
 
-<!-- STATS -->
-<div id="v-stats" style="display:none">
-  <div class="stat-grid" id="stat-cards"></div>
+<!-- CALENDAR -->
+<div id="v-cal" style="display:none">
   <div class="fc" style="margin-bottom:12px">
-    <div style="font-size:14px;font-weight:700;color:var(--g2);margin-bottom:14px">📊 작물별 작업 횟수</div>
-    <div id="chart-crop"></div>
+    <!-- 달력 헤더 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <button onclick="calMove(-1)" style="background:var(--accent);border:none;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:16px;color:var(--g2)">‹</button>
+      <div style="text-align:center">
+        <div style="font-size:17px;font-weight:700;color:var(--g2)" id="cal-title"></div>
+      </div>
+      <button onclick="calMove(1)" style="background:var(--accent);border:none;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:16px;color:var(--g2)">›</button>
+    </div>
+    <!-- 요일 헤더 -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px">
+      <div style="text-align:center;font-size:11px;font-weight:700;color:#e74c3c;padding:4px">일</div>
+      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">월</div>
+      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">화</div>
+      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">수</div>
+      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">목</div>
+      <div style="text-align:center;font-size:11px;font-weight:700;color:var(--sub);padding:4px">금</div>
+      <div style="text-align:center;font-size:11px;font-weight:700;color:#3498db;padding:4px">토</div>
+    </div>
+    <!-- 달력 그리드 -->
+    <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
   </div>
-  <div class="fc">
-    <div style="font-size:14px;font-weight:700;color:var(--g2);margin-bottom:14px">🔧 작업 유형 분포</div>
-    <div id="chart-work"></div>
+
+  <!-- 선택된 날짜 일정 -->
+  <div class="fc" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:15px;font-weight:700;color:var(--g2)" id="cal-selected-date">날짜를 선택하세요</div>
+      <button onclick="openSchedForm()" style="padding:7px 14px;background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">+ 일정 추가</button>
+    </div>
+    <div id="cal-day-scheds"></div>
+  </div>
+</div>
+
+<!-- 일정 추가 모달 -->
+<div id="sched-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;overflow-y:auto">
+  <div style="background:#fff;margin:20px 14px;border-radius:20px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,var(--g2),var(--g3));padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+      <span style="color:#fff;font-weight:700;font-size:16px">📅 일정 추가</span>
+      <button onclick="closeSchedForm()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;padding:6px 12px;cursor:pointer;font-size:14px">✕</button>
+    </div>
+    <div style="padding:20px 16px">
+      <span class="lbl">일정 종류</span>
+      <div class="chips" id="sched-type-chips"></div>
+      <span class="lbl">작물명 / 일정명 *</span>
+      <input type="text" class="inp" id="sched-name" placeholder="예) 토마토 정식, 고추 영양제 살포"/>
+      <span class="lbl">날짜 *</span>
+      <input type="date" class="inp" id="sched-date"/>
+      <span class="lbl">종료일</span>
+      <input type="date" class="inp" id="sched-end"/>
+      <span class="lbl">🔄 반복 설정</span>
+      <div class="chips" id="sched-repeat-chips"></div>
+      <span class="lbl">반복 종료일</span>
+      <input type="date" class="inp" id="sched-repeat-end"/>
+      <div style="height:1px;background:var(--border);margin:4px 0 16px"></div>
+      <span class="lbl">📝 상세 정보</span>
+      <span class="lbl" style="color:var(--sub)">사용 제품</span>
+      <input type="text" class="inp" id="sched-product" placeholder="예) 하이포넥스"/>
+      <span class="lbl" style="color:var(--sub)">희석 배율</span>
+      <input type="text" class="inp" id="sched-ratio" placeholder="예) 1:500"/>
+      <span class="lbl" style="color:var(--sub)">메모</span>
+      <textarea class="inp" id="sched-memo" placeholder="파종 간격, 수량, 특이사항 등..."></textarea>
+      <button onclick="saveSched()" class="sbtn">✔ 일정 등록</button>
+    </div>
   </div>
 </div>
 
@@ -291,19 +346,23 @@ const API_URL = '/api/claude';
 let entries=[], customCrops=[], editId=null;
 let formState={crop:'고추',workType:'파종',weather:'☀️ 맑음',photo:null};
 let diagPhoto=null, diagCrop='';
+let schedules=[], calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelDate='';
+let schedTypeState='🌱 파종/정식', schedRepeatState='반복 없음';
 
 // ═══════ 초기화 ═══════
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('today').textContent='Farm Journal · '+new Date().toLocaleDateString('ko-KR');
   document.getElementById('fd').value=new Date().toISOString().split('T')[0];
-  loadData(); buildAll(); buildFilters(); buildQuickBtns(); renderList(); renderStats();
+  loadData(); buildAll(); buildFilters(); buildQuickBtns(); renderList(); renderCal();
 });
 
 function loadData(){
   try{ const e=localStorage.getItem('fj_entries'); entries=e?JSON.parse(e):sampleData(); }catch(e){entries=sampleData();}
   try{ const c=localStorage.getItem('fj_crops');   customCrops=c?JSON.parse(c):[]; }catch(e){customCrops=[];}
+  try{ const s=localStorage.getItem('fj_scheds');  schedules=s?JSON.parse(s):[]; }catch(e){schedules=[];}
 }
 function saveData(){ localStorage.setItem('fj_entries',JSON.stringify(entries)); localStorage.setItem('fj_crops',JSON.stringify(customCrops)); }
+function saveScheds(){ localStorage.setItem('fj_scheds',JSON.stringify(schedules)); }
 function sampleData(){ return [
   {id:1,date:'2026-04-08',crop:'고추',workType:'파종',weather:'☀️ 맑음',temp:'18',area:'1구역',note:'모종판에 씨앗 파종. 발아율 양호 기대.',photo:null},
   {id:2,date:'2026-04-10',crop:'배추',workType:'비료',weather:'⛅ 구름',temp:'15',area:'2구역',note:'복합비료 시비 완료. 성장 촉진 기대.',photo:null},
@@ -325,14 +384,14 @@ async function callAPI(body){
 
 // ═══════ 네비게이션 ═══════
 function go(v){
-  ['list','form','diag','enc','stats'].forEach(n=>{
+  ['list','form','diag','enc','cal'].forEach(n=>{
     document.getElementById('v-'+n).style.display=n===v?'block':'none';
   });
   document.querySelectorAll('.nav-btn').forEach((b,i)=>{
-    b.classList.toggle('on',['list','form','diag','enc','stats'][i]===v);
+    b.classList.toggle('on',['list','form','diag','enc','cal'][i]===v);
   });
   if(v==='list') renderList();
-  if(v==='stats') renderStats();
+  if(v==='cal') renderCal();
   if(v==='form'&&!editId) resetForm();
 }
 
@@ -474,7 +533,7 @@ async function runDiag(){
 🔎 진단 요약 / 🩺 예상 병충해 / ⚠️ 심각도(낮음~매우높음) / 💊 처방 및 방제 방법 / 🛡️ 예방 방법 / 📅 추적 관찰
 사진이 불명확하거나 정상인 경우에도 솔직하게 알려주세요.`;
   try{
-    const text=await callAPI({model:'claude-opus-4-5',max_tokens:1200,system,messages:[{role:'user',content:[
+    const text=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system,messages:[{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
       {type:'text',text:`이 작물 사진을 진단해주세요.${diagCrop?' 작물: '+diagCrop:''}`}
     ]}]});
@@ -497,7 +556,7 @@ async function askEnc(){
 병충해·재배 관리·비료·농약·수확 등 농업 전반에 답변합니다.
 답변 구조(해당 항목만): 핵심 요약 / 증상·원인(해당시) / 예방 및 방제 방법 / 추천 농약 또는 친환경 방법 / 주의사항`;
   try{
-    const text=await callAPI({model:'claude-opus-4-5',max_tokens:1200,system,messages:[{role:'user',content:q}]});
+    const text=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system,messages:[{role:'user',content:q}]});
     document.getElementById('enc-body').textContent=text;
     document.getElementById('enc-result').style.display='block';
   }catch(e){ document.getElementById('enc-body').textContent='오류: '+e.message; document.getElementById('enc-result').style.display='block'; }
@@ -516,30 +575,141 @@ function exportCSV(){
   toast('CSV 저장되었습니다.');
 }
 
-// ═══════ 통계 ═══════
-function renderStats(){
-  const cc={},wc={};
-  entries.forEach(e=>{cc[e.crop]=(cc[e.crop]||0)+1;wc[e.workType]=(wc[e.workType]||0)+1;});
-  const tc=Object.entries(cc).sort((a,b)=>b[1]-a[1])[0]||['—',0];
-  const tw=Object.entries(wc).sort((a,b)=>b[1]-a[1])[0]||['—',0];
-  document.getElementById('stat-cards').innerHTML=[
-    {i:'📋',l:'총 기록',v:entries.length+'건',c:'#2d5a1b'},
-    {i:'🌿',l:'관리 작물',v:Object.keys(cc).length+'종',c:'#4a7c35'},
-    {i:'🏆',l:'최다 작물',v:tc[0],c:'#6a9c4f',s:tc[1]+'건'},
-    {i:'⭐',l:'주요 작업',v:tw[0],c:'#8ab870',s:tw[1]+'건'},
-  ].map(x=>`<div class="stat-card" style="border-top:3px solid ${x.c}"><div style="font-size:20px;margin-bottom:5px">${x.i}</div><div style="font-size:10px;color:var(--sub);font-weight:600;margin-bottom:3px">${x.l}</div><div style="font-size:20px;font-weight:700;color:${x.c}">${x.v}</div>${x.s?`<div style="font-size:11px;color:#aaa;margin-top:2px">${x.s}</div>`:''}</div>`).join('');
-  renderBar('chart-crop',cc,'#2d5a1b','#6a9c4f');
-  renderBar('chart-work',wc,'#4a7c35','#8ab870');
+// ═══════ 달력 ═══════
+const SCHED_TYPES=['🌱 파종/정식','💧 살포(영양제·비료·농약)','🍅 수확','📋 기타 작업'];
+const REPEAT_OPTS=['반복 없음','7일마다','10일마다','14일마다','30일마다'];
+
+function renderCal(){
+  const now=new Date(calYear,calMonth,1);
+  document.getElementById('cal-title').textContent=`${calYear}년 ${calMonth+1}월`;
+  const firstDay=now.getDay();
+  const lastDate=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date().toISOString().split('T')[0];
+
+  // 이달의 일정 날짜 수집 (반복 포함)
+  const schedDates={};
+  schedules.forEach(s=>{
+    getDatesForSched(s).forEach(d=>{
+      if(!schedDates[d]) schedDates[d]=[];
+      schedDates[d].push(s);
+    });
+  });
+
+  let html='';
+  for(let i=0;i<firstDay;i++) html+=`<div></div>`;
+  for(let d=1;d<=lastDate;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=ds===today;
+    const isSel=ds===calSelDate;
+    const hasSched=schedDates[ds]&&schedDates[ds].length>0;
+    const dow=(firstDay+d-1)%7;
+    const col=dow===0?'#e74c3c':dow===6?'#3498db':'var(--text)';
+    html+=`<div onclick="selectCalDate('${ds}')" style="text-align:center;padding:6px 2px;cursor:pointer;border-radius:10px;
+      background:${isSel?'var(--g2)':isToday?'var(--accent)':'transparent'};
+      color:${isSel?'#fff':col};font-size:13px;font-weight:${isToday||isSel?'700':'400'};position:relative">
+      ${d}
+      ${hasSched?`<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+        background:${isSel?'#fff':'var(--g3)'};border-radius:50%;width:5px;height:5px"></div>`:''}
+    </div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+  renderDayScheds();
 }
-function renderBar(id,data,c1,c2){
-  const total=Object.values(data).reduce((a,b)=>a+b,0)||1;
-  document.getElementById(id).innerHTML=Object.entries(data).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
-    <div style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-        <span style="font-weight:600">${k}</span><span style="color:var(--sub)">${v}건</span>
+
+function selectCalDate(ds){
+  calSelDate=ds;
+  renderCal();
+  const [y,m,d]=ds.split('-');
+  document.getElementById('cal-selected-date').textContent=`${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
+}
+
+function getDatesForSched(s){
+  const dates=[];
+  const start=new Date(s.date);
+  const end=s.repeatEnd?new Date(s.repeatEnd):new Date(calYear,calMonth+1,0);
+  const interval=s.repeat==='7일마다'?7:s.repeat==='10일마다'?10:s.repeat==='14일마다'?14:s.repeat==='30일마다'?30:0;
+  let cur=new Date(start);
+  do{
+    const ds=cur.toISOString().split('T')[0];
+    if(ds.startsWith(`${calYear}-${String(calMonth+1).padStart(2,'0')}`)) dates.push(ds);
+    if(!interval) break;
+    cur=new Date(cur.getTime()+interval*86400000);
+  }while(cur<=end);
+  return dates;
+}
+
+function renderDayScheds(){
+  const el=document.getElementById('cal-day-scheds');
+  if(!calSelDate){el.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:20px">날짜를 선택하면 일정이 표시됩니다.</div>';return;}
+  const day=schedules.filter(s=>getDatesForSched(s).includes(calSelDate));
+  if(!day.length){el.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:16px">이 날 등록된 일정이 없습니다.</div>';return;}
+  el.innerHTML=day.map((s,i)=>`
+    <div style="background:var(--accent);border-radius:12px;padding:12px 14px;margin-bottom:10px;border-left:4px solid var(--g3)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--g2);margin-bottom:4px">${s.type} ${esc(s.name)}</div>
+          ${s.repeat!=='반복 없음'?`<div style="font-size:11px;color:var(--sub)">🔄 ${s.repeat}</div>`:''}
+          ${s.product?`<div style="font-size:12px;color:var(--text);margin-top:4px">제품: ${esc(s.product)}${s.ratio?' ('+esc(s.ratio)+')':''}</div>`:''}
+          ${s.memo?`<div style="font-size:12px;color:var(--sub);margin-top:4px">${esc(s.memo)}</div>`:''}
+        </div>
+        <button onclick="delSched(${schedules.indexOf(s)})" style="background:#fef0f0;color:var(--warn);border:none;border-radius:8px;padding:5px 8px;cursor:pointer;font-size:13px">🗑️</button>
       </div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(v/total*100).toFixed(1)}%;background:linear-gradient(90deg,${c1},${c2})"></div></div>
     </div>`).join('');
+}
+
+function calMove(dir){
+  calMonth+=dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCal();
+}
+
+// ═══════ 일정 폼 ═══════
+function openSchedForm(){
+  document.getElementById('sched-modal').style.display='block';
+  document.getElementById('sched-date').value=calSelDate||new Date().toISOString().split('T')[0];
+  document.getElementById('sched-name').value='';
+  document.getElementById('sched-end').value='';
+  document.getElementById('sched-repeat-end').value='';
+  document.getElementById('sched-product').value='';
+  document.getElementById('sched-ratio').value='';
+  document.getElementById('sched-memo').value='';
+  schedTypeState='🌱 파종/정식'; schedRepeatState='반복 없음';
+  buildSchedChips();
+}
+function closeSchedForm(){ document.getElementById('sched-modal').style.display='none'; }
+
+function buildSchedChips(){
+  const te=document.getElementById('sched-type-chips'); te.innerHTML='';
+  SCHED_TYPES.forEach(t=>{ const b=document.createElement('button'); b.className='chip'+(schedTypeState===t?' on':''); b.textContent=t; b.onclick=()=>{schedTypeState=t;buildSchedChips();}; te.appendChild(b); });
+  const re=document.getElementById('sched-repeat-chips'); re.innerHTML='';
+  REPEAT_OPTS.forEach(r=>{ const b=document.createElement('button'); b.className='chip'+(schedRepeatState===r?' on':''); b.textContent=r; b.onclick=()=>{schedRepeatState=r;buildSchedChips();}; re.appendChild(b); });
+}
+
+function saveSched(){
+  const name=document.getElementById('sched-name').value.trim();
+  const date=document.getElementById('sched-date').value;
+  if(!name||!date){toast('작물명/일정명과 날짜는 필수입니다.','err');return;}
+  const s={
+    id:Date.now(), type:schedTypeState, name, date,
+    end:document.getElementById('sched-end').value,
+    repeat:schedRepeatState,
+    repeatEnd:document.getElementById('sched-repeat-end').value,
+    product:document.getElementById('sched-product').value,
+    ratio:document.getElementById('sched-ratio').value,
+    memo:document.getElementById('sched-memo').value,
+  };
+  schedules.push(s); saveScheds();
+  closeSchedForm(); calSelDate=date; renderCal();
+  const [y,m,d]=date.split('-');
+  document.getElementById('cal-selected-date').textContent=`${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
+  toast('일정이 등록되었습니다.');
+}
+
+function delSched(idx){
+  if(!confirm('이 일정을 삭제할까요?')) return;
+  schedules.splice(idx,1); saveScheds(); renderDayScheds(); renderCal();
+  toast('삭제되었습니다.');
 }
 
 // ═══════ 유틸 ═══════
