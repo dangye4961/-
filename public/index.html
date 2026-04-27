@@ -533,7 +533,7 @@ async function runDiag(){
 🔎 진단 요약 / 🩺 예상 병충해 / ⚠️ 심각도(낮음~매우높음) / 💊 처방 및 방제 방법 / 🛡️ 예방 방법 / 📅 추적 관찰
 사진이 불명확하거나 정상인 경우에도 솔직하게 알려주세요.`;
   try{
-    const text=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system,messages:[{role:'user',content:[
+    const text=await callAPI({model:'claude-opus-4-54',max_tokens:1200,system,messages:[{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
       {type:'text',text:`이 작물 사진을 진단해주세요.${diagCrop?' 작물: '+diagCrop:''}`}
     ]}]});
@@ -556,7 +556,7 @@ async function askEnc(){
 병충해·재배 관리·비료·농약·수확 등 농업 전반에 답변합니다.
 답변 구조(해당 항목만): 핵심 요약 / 증상·원인(해당시) / 예방 및 방제 방법 / 추천 농약 또는 친환경 방법 / 주의사항`;
   try{
-    const text=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system,messages:[{role:'user',content:q}]});
+    const text=await callAPI({model:'claude-opus-4-54',max_tokens:1200,system,messages:[{role:'user',content:q}]});
     document.getElementById('enc-body').textContent=text;
     document.getElementById('enc-result').style.display='block';
   }catch(e){ document.getElementById('enc-body').textContent='오류: '+e.message; document.getElementById('enc-result').style.display='block'; }
