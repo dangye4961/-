@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#1a3a0a"/>
+<title>🌱 농업일지</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --g1:#1a3a0a; --g2:#2d5a1b; --g3:#4a7c35; --g4:#6a9c4f; --g5:#a8cc88;
+  --bg:#f0f4ed; --card:#fff; --text:#1e2d10; --sub:#6a8a4a; --border:#c8ddb0;
+  --accent:#e8f5e0; --warn:#c0392b;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.hdr{background:linear-gradient(150deg,var(--g1),var(--g2) 55%,var(--g3));padding:18px 16px 0;
+  position:sticky;top:0;z-index:50;box-shadow:0 4px 20px rgba(26,58,10,.4)}
+.hdr-inner{max-width:640px;margin:0 auto}
+.hdr-top{display:flex;align-items:center;gap:12px;padding-bottom:12px}
+.hdr-title{font-size:20px;font-weight:700;color:#f5f0e8}
+.hdr-sub{font-size:11px;color:#b8d4a0;margin-top:2px}
+.nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{padding:7px 16px;border-radius:20px;border:none;cursor:pointer;font-size:12px;
+  font-family:inherit;font-weight:600;white-space:nowrap;transition:all .2s;
+  background:rgba(255,255,255,.15);color:#e8f5e0}
+.nav-btn.on{background:#f5f0e8;color:var(--g2)}
+.content{max-width:640px;margin:0 auto;padding:16px 14px 100px}
+/* toast */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 22px;
+  border-radius:24px;font-size:13px;font-weight:600;z-index:999;white-space:nowrap;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);animation:fadeD .3s ease}
+.toast.ok{background:var(--g2);color:#fff}
+.toast.err{background:var(--warn);color:#fff}
+@keyframes fadeD{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+/* cards */
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;
+  box-shadow:0 2px 12px rgba(45,90,27,.08);border-left:4px solid var(--g3)}
+.tag{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700}
+.tag-c{background:var(--accent);color:var(--g2)}
+.tag-w{background:#f0f8e8;color:var(--g3)}
+.tag-a{background:#f5f0e8;color:#8a6a3a}
+/* form */
+.fc{background:var(--card);border-radius:20px;padding:20px 16px;box-shadow:0 4px 24px rgba(45,90,27,.1)}
+.lbl{font-size:12px;font-weight:700;color:var(--g3);margin-bottom:7px;display:block}
+.inp{width:100%;padding:10px 13px;border-radius:10px;border:1.5px solid var(--border);
+  background:#f8fdf4;font-size:14px;font-family:inherit;color:var(--text);outline:none;margin-bottom:14px}
+.inp:focus{border-color:var(--g3)}
+textarea.inp{height:88px;resize:vertical}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);background:#fff;
+  color:var(--g3);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.chip.on{background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;border-color:transparent}
+.row2{display:flex;gap:10px}
+.row2>div{flex:1}
+.sbtn{width:100%;padding:13px;background:linear-gradient(135deg,var(--g2),var(--g3));
+  color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.sbtn:disabled{opacity:.6}
+/* photo */
+.photo-zone{width:100%;padding:20px;border:2px dashed var(--border);border-radius:12px;
+  text-align:center;cursor:pointer;color:var(--sub);background:#f8fdf4;margin-bottom:14px;font-size:13px}
+.photo-prev{width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:8px;display:block}
+.rm-btn{padding:5px 12px;background:#fef0f0;color:var(--warn);border:none;border-radius:8px;
+  font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:14px}
+/* diag */
+.diag-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.diag-btn-pick{padding:26px 10px;border:2px solid var(--g4);border-radius:14px;
+  background:#f8fdf4;color:var(--g3);font-family:inherit;font-size:13px;font-weight:700;
+  cursor:pointer;text-align:center;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:8px}
+.diag-btn-pick:hover,.diag-btn-pick:active{border-color:var(--g3);background:var(--accent)}
+.diag-run{width:100%;padding:13px;background:linear-gradient(135deg,#1a5c2a,var(--g3));
+  color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;
+  font-family:inherit;margin-bottom:14px}
+.diag-run:disabled{opacity:.6;cursor:not-allowed}
+.result-box{background:linear-gradient(135deg,#f0f8e8,var(--accent));border-radius:14px;
+  padding:18px;border-left:4px solid var(--g3);margin-top:8px}
+.result-title{font-size:13px;font-weight:700;color:var(--g2);margin-bottom:10px}
+.result-body{font-size:13px;color:#2a3a1a;line-height:1.9;white-space:pre-wrap}
+/* spinner */
+.spin-wrap{text-align:center;padding:28px;color:var(--sub);font-size:13px}
+.spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);
+  border-top-color:var(--g3);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* enc */
+.enc-search-row{display:flex;gap:8px;margin-bottom:10px}
+.enc-search{flex:1;padding:10px 13px;border-radius:10px;border:1.5px solid var(--border);
+  background:#f8fdf4;font-size:14px;font-family:inherit;color:var(--text);outline:none}
+.enc-search-btn{padding:10px 18px;background:linear-gradient(135deg,var(--g2),var(--g3));
+  color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.enc-search-btn:disabled{opacity:.6}
+.quick-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.qbtn{padding:5px 12px;border-radius:16px;border:1.5px solid var(--border);background:#fff;
+  color:var(--g3);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+/* stats */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 2px 12px rgba(45,90,27,.08)}
+.bar-track{height:8px;background:var(--accent);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s}
+/* filter */
+.fsel{padding:7px 11px;border-radius:10px;border:1.5px solid var(--border);background:#fff;
+  font-size:12px;font-family:inherit;color:var(--text);outline:none}
+.exp-btn{padding:7px 14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;
+  color:var(--g2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+/* crop add */
+.crop-row{display:flex;gap:8px;margin-bottom:14px}
+.crop-inp{flex:1;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);
+  background:#f8fdf4;font-size:13px;font-family:inherit;color:var(--text);outline:none}
+.crop-add{padding:8px 14px;background:var(--g3);color:#fff;border:none;border-radius:10px;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+/* print */
+@media print{
+  .hdr,.nav-btn,.exp-btn,.fsel,.no-print{display:none!important}
+  .content{padding:0!important}
+  .card{box-shadow:none!important;break-inside:avoid}
+}
+.empty{text-align:center;padding:60px 20px;color:var(--sub)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-top">
+      <span style="font-size:30px">🌱</span>
+      <div>
+        <div class="hdr-title">농업일지</div>
+        <div class="hdr-sub" id="today"></div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn on" onclick="go('list')">📋 일지</button>
+      <button class="nav-btn" onclick="go('form')">✏️ 기록</button>
+      <button class="nav-btn" onclick="go('diag')">🔬 병충해 진단</button>
+      <button class="nav-btn" onclick="go('enc')">📖 백과사전</button>
+      <button class="nav-btn" onclick="go('stats')">📊 통계</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" style="display:none"></div>
+
+<div class="content">
+
+<!-- LIST -->
+<div id="v-list">
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+    <select class="fsel" id="fc" onchange="renderList()"><option>전체</option></select>
+    <select class="fsel" id="fw" onchange="renderList()"><option>전체</option></select>
+    <span id="cnt" style="margin-left:auto;font-size:12px;color:var(--sub)"></span>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center" class="no-print">
+    <span style="font-size:12px;color:var(--sub);font-weight:600">📁 저장</span>
+    <button class="exp-btn" onclick="exportCSV()">📊 엑셀(CSV)</button>
+    <button class="exp-btn" onclick="window.print()">🖨️ 인쇄/PDF</button>
+  </div>
+  <div id="entries"></div>
+</div>
+
+<!-- FORM -->
+<div id="v-form" style="display:none">
+<div class="fc">
+  <div style="font-size:17px;font-weight:700;color:var(--g2);margin-bottom:18px" id="form-title">새 일지 기록</div>
+  <span class="lbl">📅 날짜</span>
+  <input type="date" class="inp" id="fd"/>
+  <span class="lbl">🌿 작물 선택</span>
+  <div class="chips" id="chips-crop"></div>
+  <div class="crop-row">
+    <input type="text" class="crop-inp" id="crop-custom" placeholder="작물명 직접 추가..."/>
+    <button class="crop-add" onclick="addCustomCrop()">+ 추가</button>
+  </div>
+  <span class="lbl">🔧 작업 종류</span>
+  <div class="chips" id="chips-work"></div>
+  <span class="lbl">🌤️ 날씨</span>
+  <div class="chips" id="chips-weather"></div>
+  <div class="row2">
+    <div><span class="lbl">🌡️ 기온(°C)</span><input type="number" class="inp" id="ftemp" placeholder="예: 18"/></div>
+    <div><span class="lbl">📍 구역</span><input type="text" class="inp" id="farea" placeholder="예: 1구역"/></div>
+  </div>
+  <span class="lbl">📸 사진 첨부</span>
+  <div id="photo-wrap">
+    <div class="diag-btns" style="margin-bottom:0">
+      <button class="diag-btn-pick" onclick="document.getElementById('form-gallery').click()">
+        <span style="font-size:28px">🖼️</span>갤러리 선택
+      </button>
+      <button class="diag-btn-pick" onclick="document.getElementById('form-camera').click()">
+        <span style="font-size:28px">📷</span>카메라 촬영
+      </button>
+    </div>
+    <input type="file" id="form-gallery" accept="image/*" style="display:none" onchange="handleFormPhoto(event)"/>
+    <input type="file" id="form-camera" accept="image/*" capture="environment" style="display:none" onchange="handleFormPhoto(event)"/>
+  </div>
+  <img id="form-photo-prev" style="display:none" class="photo-prev"/>
+  <button id="form-photo-rm" class="rm-btn" style="display:none" onclick="removeFormPhoto()">❌ 사진 제거</button>
+  <span class="lbl">📝 메모</span>
+  <textarea class="inp" id="fnote" placeholder="작업 내용, 특이사항 등을 기록하세요..."></textarea>
+  <button class="sbtn" id="submit-btn" onclick="submitForm()">✔ 저장하기</button>
+</div>
+</div>
+
+<!-- DIAGNOSIS -->
+<div id="v-diag" style="display:none">
+<div class="fc">
+  <div style="font-size:17px;font-weight:700;color:var(--g2);margin-bottom:6px">🔬 AI 병충해 진단</div>
+  <div style="font-size:13px;color:var(--sub);margin-bottom:18px;line-height:1.7">
+    이상 부위(잎·줄기·열매)를 촬영하거나 갤러리에서 선택하면 AI가 병충해를 진단합니다.
+  </div>
+  <div id="diag-pick">
+    <div class="diag-btns">
+      <button class="diag-btn-pick" onclick="document.getElementById('diag-gallery').click()">
+        <span style="font-size:32px">🖼️</span>갤러리에서 선택
+      </button>
+      <button class="diag-btn-pick" onclick="document.getElementById('diag-camera').click()">
+        <span style="font-size:32px">📷</span>카메라로 촬영
+      </button>
+    </div>
+    <input type="file" id="diag-gallery" accept="image/*" style="display:none" onchange="handleDiagPhoto(event)"/>
+    <input type="file" id="diag-camera" accept="image/*" capture="environment" style="display:none" onchange="handleDiagPhoto(event)"/>
+  </div>
+  <div id="diag-prev-wrap" style="display:none;margin-bottom:14px">
+    <img id="diag-prev" class="photo-prev"/>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="diag-btn-pick" style="padding:8px 14px;font-size:12px" onclick="document.getElementById('diag-gallery').click()">🖼️ 다른 사진</button>
+      <button class="diag-btn-pick" style="padding:8px 14px;font-size:12px" onclick="document.getElementById('diag-camera').click()">📷 다시 촬영</button>
+      <button class="rm-btn" style="margin-bottom:0" onclick="removeDiagPhoto()">❌ 제거</button>
+    </div>
+  </div>
+  <span class="lbl" style="margin-top:8px;display:block">🌿 작물 선택 (선택사항)</span>
+  <div class="chips" id="diag-chips"></div>
+  <button class="diag-run" id="diag-run-btn" onclick="runDiag()" disabled>🔍 AI 진단 시작</button>
+  <div id="diag-loading" style="display:none" class="spin-wrap"><div class="spinner"></div><br/>AI가 사진을 분석 중입니다...</div>
+  <div id="diag-result" style="display:none" class="result-box">
+    <div class="result-title">🩺 진단 결과</div>
+    <div class="result-body" id="diag-body"></div>
+  </div>
+</div>
+</div>
+
+<!-- ENCYCLOPEDIA -->
+<div id="v-enc" style="display:none">
+<div class="fc">
+  <div style="font-size:17px;font-weight:700;color:var(--g2);margin-bottom:6px">📖 농업 백과사전</div>
+  <div style="font-size:13px;color:var(--sub);margin-bottom:16px;line-height:1.6">
+    병충해, 재배법, 비료, 농약 등 무엇이든 질문하세요.
+  </div>
+  <div class="enc-search-row">
+    <input type="text" class="enc-search" id="enc-q" placeholder="예: 고추 탄저병 예방법, 벼 물 관리..."
+      onkeydown="if(event.key==='Enter') askEnc()"/>
+    <button class="enc-search-btn" id="enc-btn" onclick="askEnc()">검색</button>
+  </div>
+  <div style="font-size:12px;color:var(--sub);font-weight:600;margin-bottom:8px">💡 빠른 검색</div>
+  <div class="quick-btns" id="quick-btns"></div>
+  <div id="enc-loading" style="display:none" class="spin-wrap"><div class="spinner"></div><br/>AI가 답변 중입니다...</div>
+  <div id="enc-result" style="display:none" class="result-box">
+    <div class="result-title">📖 답변</div>
+    <div class="result-body" id="enc-body"></div>
+  </div>
+</div>
+</div>
+
+<!-- STATS -->
+<div id="v-stats" style="display:none">
+  <div class="stat-grid" id="stat-cards"></div>
+  <div class="fc" style="margin-bottom:12px">
+    <div style="font-size:14px;font-weight:700;color:var(--g2);margin-bottom:14px">📊 작물별 작업 횟수</div>
+    <div id="chart-crop"></div>
+  </div>
+  <div class="fc">
+    <div style="font-size:14px;font-weight:700;color:var(--g2);margin-bottom:14px">🔧 작업 유형 분포</div>
+    <div id="chart-work"></div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ═══════ 상수 ═══════
+const DEFAULT_CROPS=['벼','고추','감자','토마토','오이','배추','무','콩','옥수수','사과','배','포도','딸기'];
+const WORK_TYPES=['파종','이식','비료','농약','관수','제초','수확','전지','기타'];
+const WEATHER=['☀️ 맑음','⛅ 구름','🌧️ 비','⛈️ 천둥','❄️ 눈','🌫️ 안개','💨 바람'];
+const QUICK_Q=['진딧물 방제 방법','벼 도열병 증상과 처방','토마토 역병 원인과 예방',
+  '고추 탄저병 방제','배추 무름병 치료','점박이응애 친환경 방제',
+  '벼 재배 시기별 관리','사과 전지 전정 방법','작물 비료 시비법','농약 안전 사용법'];
+
+// ※ Vercel 배포 후 이 URL을 자신의 URL로 변경하세요
+const API_URL = '/api/claude';
+
+// ═══════ 상태 ═══════
+let entries=[], customCrops=[], editId=null;
+let formState={crop:'고추',workType:'파종',weather:'☀️ 맑음',photo:null};
+let diagPhoto=null, diagCrop='';
+
+// ═══════ 초기화 ═══════
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('today').textContent='Farm Journal · '+new Date().toLocaleDateString('ko-KR');
+  document.getElementById('fd').value=new Date().toISOString().split('T')[0];
+  loadData(); buildAll(); buildFilters(); buildQuickBtns(); renderList(); renderStats();
+});
+
+function loadData(){
+  try{ const e=localStorage.getItem('fj_entries'); entries=e?JSON.parse(e):sampleData(); }catch(e){entries=sampleData();}
+  try{ const c=localStorage.getItem('fj_crops');   customCrops=c?JSON.parse(c):[]; }catch(e){customCrops=[];}
+}
+function saveData(){ localStorage.setItem('fj_entries',JSON.stringify(entries)); localStorage.setItem('fj_crops',JSON.stringify(customCrops)); }
+function sampleData(){ return [
+  {id:1,date:'2026-04-08',crop:'고추',workType:'파종',weather:'☀️ 맑음',temp:'18',area:'1구역',note:'모종판에 씨앗 파종. 발아율 양호 기대.',photo:null},
+  {id:2,date:'2026-04-10',crop:'배추',workType:'비료',weather:'⛅ 구름',temp:'15',area:'2구역',note:'복합비료 시비 완료. 성장 촉진 기대.',photo:null},
+];}
+function allCrops(){ return [...DEFAULT_CROPS,...customCrops]; }
+
+// ═══════ API 호출 ═══════
+async function callAPI(body){
+  const res=await fetch(API_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  if(!res.ok){ const t=await res.text(); throw new Error(`서버 오류 ${res.status}: ${t}`); }
+  const d=await res.json();
+  if(d.error) throw new Error(d.error.message||JSON.stringify(d.error));
+  return d.content?.map(c=>c.text||'').join('')||'';
+}
+
+// ═══════ 네비게이션 ═══════
+function go(v){
+  ['list','form','diag','enc','stats'].forEach(n=>{
+    document.getElementById('v-'+n).style.display=n===v?'block':'none';
+  });
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>{
+    b.classList.toggle('on',['list','form','diag','enc','stats'][i]===v);
+  });
+  if(v==='list') renderList();
+  if(v==='stats') renderStats();
+  if(v==='form'&&!editId) resetForm();
+}
+
+// ═══════ 칩 빌더 ═══════
+function buildChips(id,items,key,state,onPick){
+  const el=document.getElementById(id); el.innerHTML='';
+  items.forEach(item=>{
+    const b=document.createElement('button');
+    b.className='chip'+(state[key]===item?' on':'');
+    b.textContent=item;
+    b.onclick=()=>{ state[key]=item; onPick&&onPick(); buildChips(id,items,key,state,onPick); };
+    el.appendChild(b);
+  });
+}
+function buildAll(){
+  buildChips('chips-crop',allCrops(),'crop',formState);
+  buildChips('chips-work',WORK_TYPES,'workType',formState);
+  buildChips('chips-weather',WEATHER,'weather',formState);
+  buildDiagChips();
+}
+function buildDiagChips(){
+  const el=document.getElementById('diag-chips'); el.innerHTML='';
+  ['선택 안함',...allCrops()].forEach(c=>{
+    const b=document.createElement('button');
+    b.className='chip'+(((diagCrop===''&&c==='선택 안함')||(diagCrop===c))?' on':'');
+    b.textContent=c;
+    b.onclick=()=>{ diagCrop=c==='선택 안함'?'':c; buildDiagChips(); };
+    el.appendChild(b);
+  });
+}
+function buildQuickBtns(){
+  const el=document.getElementById('quick-btns'); el.innerHTML='';
+  QUICK_Q.forEach(q=>{ const b=document.createElement('button'); b.className='qbtn'; b.textContent=q; b.onclick=()=>quickEnc(q); el.appendChild(b); });
+}
+function buildFilters(){
+  const fc=document.getElementById('fc'),fw=document.getElementById('fw');
+  fc.innerHTML='<option>전체</option>'; fw.innerHTML='<option>전체</option>';
+  allCrops().forEach(c=>{const o=document.createElement('option');o.textContent=c;fc.appendChild(o);});
+  WORK_TYPES.forEach(w=>{const o=document.createElement('option');o.textContent=w;fw.appendChild(o);});
+}
+
+// ═══════ 작물 추가 ═══════
+function addCustomCrop(){
+  const n=document.getElementById('crop-custom').value.trim();
+  if(!n){toast('작물명을 입력하세요.','err');return;}
+  if(allCrops().includes(n)){toast('이미 있는 작물입니다.','err');return;}
+  customCrops.push(n); saveData(); formState.crop=n;
+  buildAll(); buildFilters(); document.getElementById('crop-custom').value='';
+  toast(`'${n}' 추가되었습니다.`);
+}
+
+// ═══════ 목록 렌더 ═══════
+function renderList(){
+  const fc=document.getElementById('fc').value, fw=document.getElementById('fw').value;
+  const f=entries.filter(e=>fc==='전체'||e.crop===fc).filter(e=>fw==='전체'||e.workType===fw)
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('cnt').textContent=f.length+'건';
+  const el=document.getElementById('entries');
+  if(!f.length){ el.innerHTML='<div class="empty"><div style="font-size:48px;margin-bottom:12px">📭</div><p>기록된 일지가 없습니다.<br/>✏️ 기록 탭에서 추가하세요!</p></div>'; return; }
+  el.innerHTML=f.map(e=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--sub);font-weight:600;margin-bottom:5px">${e.date}</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+            <span class="tag tag-c">${e.crop}</span>
+            <span class="tag tag-w">${e.workType}</span>
+            ${e.area?`<span class="tag tag-a">${e.area}</span>`:''}
+          </div>
+          <div style="font-size:12px;color:var(--sub);margin-bottom:${e.note?'6':'0'}px">
+            ${e.weather}${e.temp?`  🌡️ ${e.temp}°C`:''}
+          </div>
+          ${e.note?`<div style="font-size:13px;color:#3a4a2a;line-height:1.6">${esc(e.note)}</div>`:''}
+          ${e.photo?`<img src="${e.photo}" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-top:10px"/>`:''}
+        </div>
+        <div style="display:flex;gap:6px;margin-left:10px">
+          <button onclick="startEdit(${e.id})" style="padding:7px 10px;border:none;border-radius:8px;background:#f0f8e8;cursor:pointer;font-size:14px">✏️</button>
+          <button onclick="delEntry(${e.id})" style="padding:7px 10px;border:none;border-radius:8px;background:#fef0f0;cursor:pointer;font-size:14px">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════ 폼 ═══════
+function submitForm(){
+  const date=document.getElementById('fd').value;
+  if(!date||!formState.crop||!formState.workType){toast('날짜·작물·작업 종류는 필수입니다.','err');return;}
+  const entry={date,crop:formState.crop,workType:formState.workType,weather:formState.weather,
+    temp:document.getElementById('ftemp').value,area:document.getElementById('farea').value,
+    note:document.getElementById('fnote').value,photo:formState.photo};
+  if(editId){ entries=entries.map(e=>e.id===editId?{...entry,id:editId}:e); toast('수정되었습니다.'); editId=null; }
+  else{ entry.id=Date.now(); entries.unshift(entry); toast('저장되었습니다.'); }
+  saveData(); resetForm(); go('list');
+}
+function resetForm(){
+  editId=null; formState={crop:'고추',workType:'파종',weather:'☀️ 맑음',photo:null};
+  document.getElementById('fd').value=new Date().toISOString().split('T')[0];
+  ['ftemp','farea','fnote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('form-title').textContent='새 일지 기록';
+  document.getElementById('submit-btn').textContent='✔ 저장하기';
+  removeFormPhoto(); buildAll();
+}
+function startEdit(id){
+  const e=entries.find(x=>x.id===id); if(!e) return;
+  editId=id; formState={crop:e.crop,workType:e.workType,weather:e.weather,photo:e.photo||null};
+  document.getElementById('fd').value=e.date;
+  document.getElementById('ftemp').value=e.temp||'';
+  document.getElementById('farea').value=e.area||'';
+  document.getElementById('fnote').value=e.note||'';
+  document.getElementById('form-title').textContent='일지 수정';
+  document.getElementById('submit-btn').textContent='✔ 수정 완료';
+  if(e.photo){ document.getElementById('form-photo-prev').src=e.photo; document.getElementById('form-photo-prev').style.display='block'; document.getElementById('form-photo-rm').style.display='inline-block'; document.getElementById('photo-wrap').style.display='none'; }
+  buildAll(); go('form');
+}
+function delEntry(id){ if(!confirm('삭제할까요?')) return; entries=entries.filter(e=>e.id!==id); saveData(); renderList(); toast('삭제되었습니다.'); }
+
+// ═══════ 폼 사진 ═══════
+function handleFormPhoto(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=e=>{ formState.photo=e.target.result; document.getElementById('form-photo-prev').src=e.target.result; document.getElementById('form-photo-prev').style.display='block'; document.getElementById('photo-wrap').style.display='none'; document.getElementById('form-photo-rm').style.display='inline-block'; }; r.readAsDataURL(f);
+}
+function removeFormPhoto(){ formState.photo=null; document.getElementById('form-photo-prev').style.display='none'; document.getElementById('photo-wrap').style.display='block'; document.getElementById('form-photo-rm').style.display='none'; document.getElementById('form-gallery').value=''; document.getElementById('form-camera').value=''; }
+
+// ═══════ 진단 ═══════
+function handleDiagPhoto(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=e=>{ diagPhoto=e.target.result; document.getElementById('diag-prev').src=e.target.result; document.getElementById('diag-prev-wrap').style.display='block'; document.getElementById('diag-pick').style.display='none'; document.getElementById('diag-run-btn').disabled=false; document.getElementById('diag-result').style.display='none'; ev.target.value=''; }; r.readAsDataURL(f);
+}
+function removeDiagPhoto(){ diagPhoto=null; document.getElementById('diag-prev-wrap').style.display='none'; document.getElementById('diag-pick').style.display='block'; document.getElementById('diag-run-btn').disabled=true; document.getElementById('diag-result').style.display='none'; }
+
+async function runDiag(){
+  if(!diagPhoto){toast('사진을 먼저 선택하세요.','err');return;}
+  document.getElementById('diag-run-btn').disabled=true;
+  document.getElementById('diag-loading').style.display='block';
+  document.getElementById('diag-result').style.display='none';
+  const base64=diagPhoto.split(',')[1], mediaType=diagPhoto.match(/data:([^;]+)/)[1];
+  const system=`당신은 농업 전문가이자 식물병리학자입니다. 작물 사진을 보고 병충해를 진단해 주세요.
+다음 형식으로 한국어로 답변하세요:
+🔎 진단 요약 / 🩺 예상 병충해 / ⚠️ 심각도(낮음~매우높음) / 💊 처방 및 방제 방법 / 🛡️ 예방 방법 / 📅 추적 관찰
+사진이 불명확하거나 정상인 경우에도 솔직하게 알려주세요.`;
+  try{
+    const text=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
+      {type:'text',text:`이 작물 사진을 진단해주세요.${diagCrop?' 작물: '+diagCrop:''}`}
+    ]}]});
+    document.getElementById('diag-body').textContent=text;
+    document.getElementById('diag-result').style.display='block';
+  }catch(e){ document.getElementById('diag-body').textContent='오류: '+e.message; document.getElementById('diag-result').style.display='block'; }
+  document.getElementById('diag-loading').style.display='none';
+  document.getElementById('diag-run-btn').disabled=false;
+}
+
+// ═══════ 백과사전 ═══════
+function quickEnc(q){ document.getElementById('enc-q').value=q; askEnc(); }
+async function askEnc(){
+  const q=document.getElementById('enc-q').value.trim();
+  if(!q){toast('질문을 입력하세요.','err');return;}
+  document.getElementById('enc-btn').disabled=true;
+  document.getElementById('enc-loading').style.display='block';
+  document.getElementById('enc-result').style.display='none';
+  const system=`당신은 한국 농업 전문가입니다. 농부의 질문에 실용적이고 구체적인 답변을 한국어로 제공하세요.
+병충해·재배 관리·비료·농약·수확 등 농업 전반에 답변합니다.
+답변 구조(해당 항목만): 핵심 요약 / 증상·원인(해당시) / 예방 및 방제 방법 / 추천 농약 또는 친환경 방법 / 주의사항`;
+  try{
+    const text=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system,messages:[{role:'user',content:q}]});
+    document.getElementById('enc-body').textContent=text;
+    document.getElementById('enc-result').style.display='block';
+  }catch(e){ document.getElementById('enc-body').textContent='오류: '+e.message; document.getElementById('enc-result').style.display='block'; }
+  document.getElementById('enc-loading').style.display='none';
+  document.getElementById('enc-btn').disabled=false;
+}
+
+// ═══════ CSV ═══════
+function exportCSV(){
+  if(!entries.length){toast('저장할 기록이 없습니다.','err');return;}
+  const h=['날짜','작물','작업종류','날씨','기온(°C)','구역','메모'];
+  const rows=[...entries].sort((a,b)=>a.date.localeCompare(b.date)).map(e=>[e.date,e.crop,e.workType,e.weather,e.temp||'',e.area||'',(e.note||'').replace(/,/g,' ').replace(/\n/g,' ')]);
+  const csv='\uFEFF'+[h,...rows].map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download=`농업일지_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(url);
+  toast('CSV 저장되었습니다.');
+}
+
+// ═══════ 통계 ═══════
+function renderStats(){
+  const cc={},wc={};
+  entries.forEach(e=>{cc[e.crop]=(cc[e.crop]||0)+1;wc[e.workType]=(wc[e.workType]||0)+1;});
+  const tc=Object.entries(cc).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const tw=Object.entries(wc).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  document.getElementById('stat-cards').innerHTML=[
+    {i:'📋',l:'총 기록',v:entries.length+'건',c:'#2d5a1b'},
+    {i:'🌿',l:'관리 작물',v:Object.keys(cc).length+'종',c:'#4a7c35'},
+    {i:'🏆',l:'최다 작물',v:tc[0],c:'#6a9c4f',s:tc[1]+'건'},
+    {i:'⭐',l:'주요 작업',v:tw[0],c:'#8ab870',s:tw[1]+'건'},
+  ].map(x=>`<div class="stat-card" style="border-top:3px solid ${x.c}"><div style="font-size:20px;margin-bottom:5px">${x.i}</div><div style="font-size:10px;color:var(--sub);font-weight:600;margin-bottom:3px">${x.l}</div><div style="font-size:20px;font-weight:700;color:${x.c}">${x.v}</div>${x.s?`<div style="font-size:11px;color:#aaa;margin-top:2px">${x.s}</div>`:''}</div>`).join('');
+  renderBar('chart-crop',cc,'#2d5a1b','#6a9c4f');
+  renderBar('chart-work',wc,'#4a7c35','#8ab870');
+}
+function renderBar(id,data,c1,c2){
+  const total=Object.values(data).reduce((a,b)=>a+b,0)||1;
+  document.getElementById(id).innerHTML=Object.entries(data).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="font-weight:600">${k}</span><span style="color:var(--sub)">${v}건</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(v/total*100).toFixed(1)}%;background:linear-gradient(90deg,${c1},${c2})"></div></div>
+    </div>`).join('');
+}
+
+// ═══════ 유틸 ═══════
+function toast(msg,type='ok'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+type; t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>
