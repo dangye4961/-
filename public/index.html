@@ -605,10 +605,10 @@ function setCalView(v){
 
 function renderCalList(){
   const allDates={};
-  schedules.forEach(s=>{
-    getDatesForSched(s).forEach(d=>{
+  schedules.forEach(function(s){
+    getDatesForSched(s).forEach(function(d){
       const ym=d.slice(0,7);
-      const key=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+      const key=calYear+'-'+String(calMonth+1).padStart(2,'0');
       if(ym===key){
         if(!allDates[d]) allDates[d]=[];
         allDates[d].push(s);
@@ -617,45 +617,40 @@ function renderCalList(){
   });
   const sorted=Object.keys(allDates).sort();
   const el=document.getElementById('cal-list-body');
-  const total=sorted.reduce((a,d)=>a+allDates[d].length,0);
+  const total=sorted.reduce(function(a,d){return a+allDates[d].length;},0);
   if(!sorted.length){
     el.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:24px">이달 등록된 일정이 없습니다.</div>';
     return;
   }
   const typeColor={'🌱 파종/정식':'#2d7a3a','💧 살포(영양제·비료·농약)':'#2060c0','🍅 수확':'#c0392b','📋 기타 작업':'#8a6a3a'};
   const typeLabel={'🌱 파종/정식':'파종/정식','💧 살포(영양제·비료·농약)':'살포','🍅 수확':'수확','📋 기타 작업':'기타'};
-  el.innerHTML=`<div style="font-size:14px;font-weight:700;color:var(--g2);margin-bottom:14px">${calMonth+1}월 일정 목록 (${total}건)</div>`
-  +sorted.map(d=>{
+  let html='<div style="font-size:14px;font-weight:700;color:var(--g2);margin-bottom:14px">'+(calMonth+1)+'월 일정 목록 ('+total+'건)</div>';
+  sorted.forEach(function(d){
     const dt=new Date(d);
     const dow=['일','월','화','수','목','금','토'][dt.getDay()];
     const dowColor=dow==='일'?'#e74c3c':dow==='토'?'#3498db':'var(--text)';
     const mm=d.slice(5,7), dd=d.slice(8,10);
-    return `<div style="margin-bottom:16px">
-      <div style="font-size:13px;font-weight:700;color:${dowColor};margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">
-        ${mm}/${dd} (${dow})
-      </div>
-      ${allDates[d].map(s=>{
-        const tc=typeColor[s.type]||'#4a7c35';
-        const tl=typeLabel[s.type]||'기타';
-        const isRepeat=s.repeat&&s.repeat!=='반복 없음';
-        return `<div style="background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;
-          box-shadow:0 1px 6px rgba(45,90,27,.1);border-left:4px solid ${tc};display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-              <span style="font-size:14px;font-weight:700;color:var(--text)">${esc(s.name)}</span>
-              ${isRepeat?`<span style="font-size:10px;color:var(--sub)">↻</span>`:''}
-            </div>
-            ${s.product?`<div style="font-size:12px;color:var(--sub);margin-bottom:2px">${esc(s.product)}${s.ratio?' · '+esc(s.ratio):''}</div>`:''}
-            ${s.memo?`<div style="font-size:12px;color:var(--sub)">${esc(s.memo)}</div>`:''}
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:8px;flex-shrink:0">
-            <span style="background:${tc};color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px">${tl}</span>
-            <button onclick="delSched(${schedules.indexOf(s)})" style="background:#fef0f0;color:var(--warn);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px">🗑️</button>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }).join('');
+    html+='<div style="margin-bottom:16px">';
+    html+='<div style="font-size:13px;font-weight:700;color:'+dowColor+';margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">'+mm+'/'+dd+' ('+dow+')</div>';
+    allDates[d].forEach(function(s){
+      const tc=typeColor[s.type]||'#4a7c35';
+      const tl=typeLabel[s.type]||'기타';
+      const isRepeat=s.repeat&&s.repeat!=='반복 없음';
+      const idx=schedules.indexOf(s);
+      html+='<div style="background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 6px rgba(45,90,27,.1);border-left:4px solid '+tc+';display:flex;justify-content:space-between;align-items:flex-start">';
+      html+='<div style="flex:1">';
+      html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:14px;font-weight:700;color:var(--text)">'+esc(s.name)+'</span>'+(isRepeat?'<span style="font-size:10px;color:var(--sub)">↻</span>':'')+'</div>';
+      if(s.product) html+='<div style="font-size:12px;color:var(--sub);margin-bottom:2px">'+esc(s.product)+(s.ratio?' · '+esc(s.ratio):'')+'</div>';
+      if(s.memo) html+='<div style="font-size:12px;color:var(--sub)">'+esc(s.memo)+'</div>';
+      html+='</div>';
+      html+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:8px;flex-shrink:0">';
+      html+='<span style="background:'+tc+';color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px">'+tl+'</span>';
+      html+='<button onclick="delSched('+idx+')" style="background:#fef0f0;color:var(--warn);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px">🗑️</button>';
+      html+='</div></div>';
+    });
+    html+='</div>';
+  });
+  el.innerHTML=html;
 }
   const now=new Date(calYear,calMonth,1);
   document.getElementById('cal-title').textContent=`${calYear}년 ${calMonth+1}월`;
